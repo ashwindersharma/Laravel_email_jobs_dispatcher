@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-8080}:80"
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      # Literal values — do not use ${APP_URL} (Compose reads that from .env and breaks asset URLs).
+      APP_URL: "http://localhost:8080"
+      ASSET_URL: "http://localhost:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["queue"]
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${DOCKER_APP_URL:-http://localhost:8080}
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
