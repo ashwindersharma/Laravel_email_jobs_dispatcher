@@ -2,7 +2,7 @@
   "$schema": "https://schema.railpack.com",
   "providers": {
     "php": {
-      "extensions": ["gd"]
+      "extensions": ["gd", "zip", "intl", "pdo_pgsql", "bcmath"]
     }
   }
 }
