@@ -1,0 +1,12 @@
+# Deploy as ONE Railway service (Nginx + PHP-FPM + queue worker via Supervisor).
+# Attach a volume in the Railway dashboard and mount it (recommended: /data).
+# RAILWAY_VOLUME_MOUNT_PATH is injected automatically when a volume is attached.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/up"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"

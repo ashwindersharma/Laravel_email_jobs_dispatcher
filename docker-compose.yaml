@@ -1,3 +1,6 @@
+# Single container: Nginx + PHP-FPM + Laravel + queue worker (Supervisor).
+# On Railway: deploy one service, attach a volume, and set its mount path (e.g. /data).
+# Railway sets RAILWAY_VOLUME_MOUNT_PATH automatically when a volume is attached.
 
 services:
   app:
@@ -18,34 +21,19 @@ services:
       APP_DEBUG: ${APP_DEBUG:-false}
       APP_URL: "http://localhost:8080"
       ASSET_URL: "http://localhost:8080"
+      QUEUE_SLEEP: ${QUEUE_SLEEP:-3}
+      QUEUE_TRIES: ${QUEUE_TRIES:-3}
+      QUEUE_MAX_TIME: ${QUEUE_MAX_TIME:-3600}
+      QUEUE_TIMEOUT: ${QUEUE_TIMEOUT:-120}
 
     volumes:
       - ./:/var/www/html
 
     restart: unless-stopped
 
-  queue:
-    build:
-      context: .
-      dockerfile: Dockerfile
-
-    container_name: laravel_queue
-
-    command: php artisan queue:work --tries=3 --timeout=90
-
-    env_file:
-      - .env
-
-    environment:
-      APP_ENV: ${APP_ENV:-production}
-      APP_DEBUG: ${APP_DEBUG:-false}
-      APP_URL: "http://localhost:8080"
-
-    volumes:
-      - ./:/var/www/html
-
-    depends_on:
-      - app
-
-    restart: unless-stopped
-
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s

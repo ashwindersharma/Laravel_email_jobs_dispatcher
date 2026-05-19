@@ -60,7 +60,7 @@ COPY . .
 RUN composer dump-autoload --optimize --classmap-authoritative
 
 # -----------------------------------------------------------------------------
-# Production runtime (Nginx + PHP-FPM)
+# Production runtime (Nginx + PHP-FPM + queue worker via Supervisor)
 # -----------------------------------------------------------------------------
 FROM php:8.2-fpm-bookworm AS app
 
@@ -122,7 +122,8 @@ RUN mkdir -p \
 
 ENV APP_ENV=production \
     APP_DEBUG=false \
-    LOG_CHANNEL=stderr
+    LOG_CHANNEL=stderr \
+    HOME=/var/www
 
 EXPOSE 80
 
