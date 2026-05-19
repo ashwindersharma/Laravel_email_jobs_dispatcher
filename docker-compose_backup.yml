@@ -20,19 +20,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
-
-  queue:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: ["queue"]
-    env_file:
-      - .env
-    environment:
-      APP_ENV: ${APP_ENV:-production}
-      APP_DEBUG: ${APP_DEBUG:-false}
-      APP_URL: ${DOCKER_APP_URL:-http://localhost:8080}
-    depends_on:
-      app:
-        condition: service_healthy
-    restart: unless-stopped

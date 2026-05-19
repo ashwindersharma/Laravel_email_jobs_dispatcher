@@ -80,12 +80,7 @@ case "${1:-web}" in
         exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
         ;;
     queue)
-        export HOME=/var/www
-        exec php artisan queue:work \
-            --sleep="${QUEUE_SLEEP:-3}" \
-            --tries="${QUEUE_TRIES:-3}" \
-            --max-time="${QUEUE_MAX_TIME:-3600}" \
-            --timeout="${QUEUE_TIMEOUT:-120}"
+        exec /usr/local/bin/queue-worker.sh
         ;;
     scheduler)
         exec php artisan schedule:work
