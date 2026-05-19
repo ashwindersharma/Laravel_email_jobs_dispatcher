@@ -1,0 +1,51 @@
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: laravel_app
+
+    ports:
+      - "${APP_PORT:-8080}:80"
+
+    env_file:
+      - .env
+
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: "http://localhost:8080"
+      ASSET_URL: "http://localhost:8080"
+
+    volumes:
+      - ./:/var/www/html
+
+    restart: unless-stopped
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: laravel_queue
+
+    command: php artisan queue:work --tries=3 --timeout=90
+
+    env_file:
+      - .env
+
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: "http://localhost:8080"
+
+    volumes:
+      - ./:/var/www/html
+
+    depends_on:
+      - app
+
+    restart: unless-stopped
+
