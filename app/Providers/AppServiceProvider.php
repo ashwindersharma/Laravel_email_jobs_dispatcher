@@ -21,8 +21,8 @@ class AppServiceProvider extends ServiceProvider {
             return;
         }
 
-        if (request()->hasHeader('Host')) {
-            URL::forceRootUrl(request()->getSchemeAndHttpHost());
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
         }
     }
 }
