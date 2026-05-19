@@ -109,14 +109,22 @@ COPY --from=vendor --chown=www-data:www-data \
     /app/vendor/romanzipp/laravel-queue-monitor/dist \
     /var/www/html/public/vendor/queue-monitor
 
-RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+RUN mkdir -p \
+        storage/framework/cache \
+        storage/framework/cache/laravel-excel \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
+        && chmod -R 775 storage bootstrap/cache \
+        && chown -R www-data:www-data storage bootstrap/cache
+
 
 ENV APP_ENV=production \
     APP_DEBUG=false \
     LOG_CHANNEL=stderr
 
-EXPOSE 8080
+EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
     CMD curl -fsS http://127.0.0.1/up || exit 1
