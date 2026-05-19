@@ -2,128 +2,164 @@
 
 namespace App\Imports;
 
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\ToCollection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use App\Models\Contact;
 use App\Models\ContactMeta;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class ContactsImport implements
     ToCollection,
     WithHeadingRow,
     WithChunkReading,
+    WithBatchInserts,
     ShouldQueue {
+    /**
+     * Queue settings
+     */
+    public int $tries = 3;
 
-    public int $tries = 3;                  // max attempts before failed()
-    // public array $backoff = [60, 300, 900]; // wait 60s, 300s, 900s between retries
     public int $timeout = 120;
 
-    public function collection(Collection $collection) {
-        DB::transaction(function () use ($collection) {
+    /**
+     * Process each chunk
+     */
+    public function collection(Collection $collection): void {
+        $contacts = [];
+        $metaRows = [];
 
-            $contacts = [];
-            $metaRows = [];
+        /*
+        |--------------------------------------------------------------------------
+        | Prepare contacts
+        |--------------------------------------------------------------------------
+        */
+        foreach ($collection as $row) {
 
-            foreach ($collection as $row) {
+            $data = $row->toArray();
 
-                $data = $row->toArray();
+            $validator = Validator::make($data, [
+                'email' => ['required', 'email'],
+            ]);
 
-                $validator = Validator::make($data, [
-                    'email' => ['required', 'email'],
-                ]);
+            if ($validator->fails()) {
+                continue;
+            }
 
-                if ($validator->fails()) {
+            $contacts[] = [
+                'email'      => trim($data['email']),
+                'first_name' => $data['first_name'] ?? null,
+                'last_name'  => $data['last_name'] ?? null,
+                'status'     => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Stop if no valid contacts
+        |--------------------------------------------------------------------------
+        */
+        if (empty($contacts)) {
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Bulk upsert contacts
+        |--------------------------------------------------------------------------
+        */
+        Contact::upsert(
+            $contacts,
+            ['email'],
+            ['first_name', 'last_name', 'status', 'updated_at']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Fetch contacts map
+        |--------------------------------------------------------------------------
+        */
+        $contactMap = Contact::whereIn(
+            'email',
+            collect($contacts)->pluck('email')
+        )->get()->keyBy('email');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Prepare meta rows
+        |--------------------------------------------------------------------------
+        */
+        foreach ($collection as $row) {
+
+            $data = $row->toArray();
+
+            if (empty($data['email'])) {
+                continue;
+            }
+
+            $email = trim($data['email']);
+
+            $contact = $contactMap[$email] ?? null;
+
+            if (!$contact) {
+                continue;
+            }
+
+            foreach ($data as $key => $value) {
+
+                if (in_array($key, [
+                    'email',
+                    'first_name',
+                    'last_name'
+                ])) {
                     continue;
                 }
 
-                $contacts[] = [
-                    'email'      => $data['email'],
-                    'first_name' => $data['first_name'] ?? null,
-                    'last_name'  => $data['last_name'] ?? null,
-                    'status'     => 'active',
+                if ($value === null || $value === '') {
+                    continue;
+                }
+
+                $metaRows[] = [
+                    'contact_id' => $contact->id,
+                    'key'        => $key,
+                    'value'      => (string) $value,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
             }
+        }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Bulk upsert contacts
-            |--------------------------------------------------------------------------
-            */
-            Contact::upsert(
-                $contacts,
-                ['email'], // unique key
-                ['first_name', 'last_name', 'status', 'updated_at']
-            );
+        /*
+        |--------------------------------------------------------------------------
+        | Bulk upsert metadata
+        |--------------------------------------------------------------------------
+        */
+        if (!empty($metaRows)) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Fetch inserted/updated contacts
-            |--------------------------------------------------------------------------
-            */
-            $contactMap = Contact::whereIn(
-                'email',
-                collect($contacts)->pluck('email')
-            )->get()->keyBy('email');
-
-            /*
-            |--------------------------------------------------------------------------
-            | Prepare contact meta rows
-            |--------------------------------------------------------------------------
-            */
-            foreach ($collection as $row) {
-
-                $data = $row->toArray();
-
-                if (empty($data['email'])) {
-                    continue;
-                }
-
-                $contact = $contactMap[$data['email']] ?? null;
-
-                if (!$contact) {
-                    continue;
-                }
-
-                foreach ($data as $key => $value) {
-
-                    if (in_array($key, [
-                        'email',
-                        'first_name',
-                        'last_name'
-                    ])) {
-                        continue;
-                    }
-
-                    $metaRows[] = [
-                        'contact_id' => $contact->id,
-                        'key'        => $key,
-                        'value'      => $value,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Bulk upsert meta
-            |--------------------------------------------------------------------------
-            */
             ContactMeta::upsert(
                 $metaRows,
-                ['contact_id', 'key'], // unique composite key
+                ['contact_id', 'key'],
                 ['value', 'updated_at']
             );
-        });
+        }
     }
 
+    /**
+     * Chunk size
+     */
     public function chunkSize(): int {
+        return 500;
+    }
+
+    /**
+     * Batch insert size
+     */
+    public function batchSize(): int {
         return 500;
     }
 }
