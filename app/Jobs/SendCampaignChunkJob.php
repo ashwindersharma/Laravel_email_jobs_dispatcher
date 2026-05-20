@@ -88,7 +88,7 @@ class SendCampaignChunkJob implements ShouldQueue {
                 throw $e;
             }
         }
-
+        // added comment
         Log::info('CHUNK JOB COMPLETED', [
             'campaign_id' => $this->campaign->id,
         ]);
