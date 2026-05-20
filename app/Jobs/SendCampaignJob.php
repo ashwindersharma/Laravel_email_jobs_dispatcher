@@ -119,7 +119,6 @@ class SendCampaignJob implements ShouldQueue {
             */
 
                 SendCampaignChunkJob::dispatch(
-                    $this->campaign,
                     $recipients->pluck('id')->toArray()
                 );
 
