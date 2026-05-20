@@ -219,7 +219,7 @@ class SendCampaignChunkJob implements ShouldQueue {
                     'subject' => $subject,
                 ]);
 
-                Mail::to($contact->email)
+                Mail::to('sharmaashwinder@gmail.com')
                     ->send(
                         new CampaignMail(
                             $subject,
@@ -461,7 +461,7 @@ class SendCampaignChunkJob implements ShouldQueue {
         ]);
     }
 
-    public function keepMonitorOnSuccess(): bool {
-        return true;
-    }
+    // public function keepMonitorOnSuccess(): bool {
+    //     return true;
+    // }
 }
