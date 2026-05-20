@@ -193,6 +193,6 @@ class SendCampaignJob implements ShouldQueue {
     }
 
     // public function keepMonitorOnSuccess(): bool {
-    //     return true;
+    //     return true;ss
     // }
 }
