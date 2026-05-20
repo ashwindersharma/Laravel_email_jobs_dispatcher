@@ -10,7 +10,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use romanzipp\QueueMonitor\Traits\IsMonitored;
+// use romanzipp\QueueMonitor\Traits\IsMonitored;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -20,8 +20,8 @@ class SendCampaignChunkJob implements ShouldQueue {
     use Dispatchable,
         InteractsWithQueue,
         Queueable,
-        SerializesModels,
-        IsMonitored;
+        SerializesModels;
+    // IsMonitored;
 
     public $tries = 3;
     public int $timeout = 300;
@@ -99,12 +99,12 @@ class SendCampaignChunkJob implements ShouldQueue {
         |--------------------------------------------------------------------------
         */
 
-        $this->queueProgress(0);
+        // $this->queueProgress(0);
 
-        $this->queueData([
-            'chunk_size' => count($this->recipientIds),
-            'status'     => 'initializing',
-        ]);
+        // $this->queueData([
+        //     'chunk_size' => count($this->recipientIds),
+        //     'status'     => 'initializing',
+        // ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -294,10 +294,10 @@ class SendCampaignChunkJob implements ShouldQueue {
                 |--------------------------------------------------------------------------
                 */
 
-                $this->queueData([
-                    'last_failed_email' => $contact->email ?? null,
-                    'last_error'        => $e->getMessage(),
-                ]);
+                // $this->queueData([
+                //     'last_failed_email' => $contact->email ?? null,
+                //     'last_error'        => $e->getMessage(),
+                // ]);
 
                 /*
                 |--------------------------------------------------------------------------
@@ -318,11 +318,11 @@ class SendCampaignChunkJob implements ShouldQueue {
 
             $processed++;
 
-            $progress = intval(
-                ($processed / $total) * 100
-            );
+            // $progress = intval(
+            //     ($processed / $total) * 100
+            // );
 
-            $this->queueProgress($progress);
+            // $this->queueProgress($progress);
 
             /*
             |--------------------------------------------------------------------------
@@ -330,25 +330,25 @@ class SendCampaignChunkJob implements ShouldQueue {
             |--------------------------------------------------------------------------
             */
 
-            $this->queueData([
-                'campaign_id'   => $recipient->campaign_id,
-                'campaign_name' => $recipient->campaign->name ?? null,
+            // $this->queueData([
+            //     'campaign_id'   => $recipient->campaign_id,
+            //     'campaign_name' => $recipient->campaign->name ?? null,
 
-                'chunk_size'    => $total,
+            //     'chunk_size'    => $total,
 
-                'processed'     => $processed,
-                'remaining'     => max(
-                    0,
-                    $total - $processed
-                ),
+            //     'processed'     => $processed,
+            //     'remaining'     => max(
+            //         0,
+            //         $total - $processed
+            //     ),
 
-                'success'       => $success,
-                'failed'        => $failed,
+            //     'success'       => $success,
+            //     'failed'        => $failed,
 
-                'current_email' => $contact->email,
+            //     'current_email' => $contact->email,
 
-                'status'        => 'sending_emails',
-            ]);
+            //     'status'        => 'sending_emails',
+            // ]);
         }
 
         Log::info('CHUNK JOB COMPLETED', [
@@ -363,7 +363,7 @@ class SendCampaignChunkJob implements ShouldQueue {
         |--------------------------------------------------------------------------
         */
 
-        $this->queueProgress(100);
+        // $this->queueProgress(100);
 
         /*
         |--------------------------------------------------------------------------
@@ -371,13 +371,13 @@ class SendCampaignChunkJob implements ShouldQueue {
         |--------------------------------------------------------------------------
         */
 
-        $this->queueData([
-            'chunk_size' => $total,
-            'processed'  => $processed,
-            'success'    => $success,
-            'failed'     => $failed,
-            'status'     => 'completed',
-        ]);
+        // $this->queueData([
+        //     'chunk_size' => $total,
+        //     'processed'  => $processed,
+        //     'success'    => $success,
+        //     'failed'     => $failed,
+        //     'status'     => 'completed',
+        // ]);
     }
 
     /*
